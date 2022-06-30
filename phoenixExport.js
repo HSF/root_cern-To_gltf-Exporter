@@ -218,11 +218,11 @@ async function internal_convert_geometry(obj, filename, max_level, subparts, hid
     convert_geometry(scenes, filename, false); // not using binary format
 }
    
-function convertGeometry(inputFile, outputFile, max_level, subparts, hide_children) {
+function convertGeometry(inputFile, outputFile, max_level, subparts, hide_children, objectName = "Default") {
     var msg = "Converting ROOT geometry from " + inputFile + " to GLTF format in " + outputFile + "...</br>";
     document.getElementsByTagName("body")[0].innerHTML = msg;
     JSROOT.openFile(inputFile)
-        .then(file => file.readObject("Default;1"))
+        .then(file => file.readObject(objectName + ";1"))
         .then(obj => internal_convert_geometry(obj, outputFile, max_level, subparts, hide_children));
     document.getElementsByTagName("body")[0].innerHTML = msg + "Convertion succeeded</br>";
 }
