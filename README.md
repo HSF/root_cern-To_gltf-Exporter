@@ -99,3 +99,15 @@ Two main steps :
 That's it, you should be able to download the GLFT resulting file.
 You can then open it with [phoenix](https://github.com/HSF/phoenix)
 
+
+## Starting from gdml data
+
+The gdml file can be converted to root easily.
+Just type this in a root prompt :
+```cpp
+TGeoManager::LockDefaultUnits(false);
+TGeoManager::SetDefaultUnits(TGeoManager::kG4Units);
+TGeoManager::Import("LHCb_Upgrade.gdml")
+TGeoManager::Export("LHCb_Upgrade.root")
+```
+Note the usage of `kG4Units` here. this sets the length unit to millimeters. Use `kRootUnits` for centimeters.
