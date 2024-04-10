@@ -61,31 +61,20 @@
         "BeamPipe > Rich1Pipe" : [["_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1Master_pvUX85",
                                    "_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1SubMaster_pvUX85"], true],
         "BeamPipe > MagnetPipe" : [["_dd_Structure_LHCb_MagnetRegion_PipeInMagnet"], true],
-        "BeamPipe > MagnetPipesupport" : [["_dd_Structure_LHCb_MagnetRegion_PipeSupport"], true],
         "BeamPipe > PipeInT" : [["_dd_Structure_LHCb_AfterMagnetRegion_T_PipeInT_"], true],
         "BeamPipe > AfterMagnetPipe" : [["_dd_Structure_LHCb_AfterMagnetRegion_Pipe"], true],
         "BeamPipe > DownstreamPipe" : [["_dd_Structure_LHCb_DownstreamRegion_PipeDownstream"], true],
-        "BeamPipe > DownstreamPipeSupport" : [["_dd_Structure_LHCb_DownstreamRegion_PipeSupport"], true],
-        "BeamPipe > DownstreamPipeBakeout" : [["_dd_Structure_LHCb_DownstreamRegion_PipeBakeout"], true],
         // VP
         "VP > Left > Modules" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*WithSupport_pvModule/,], true],
         "VP > Left > Support" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*Foot/,
                                   /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*Nikhef/,
                                   /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*Clamp/], true],
-        "VP > Left > RFFoil" : [["_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft_pvLeftRFFoil"], false],
-        "VP > Left > DeliveryPipes" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*DeliveryPipe/,
-                                        /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*Braze/,
-                                        /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*CoolingConnector/], false],
         "VP > Left > Structure" : [["_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft_pvLeftDetSup"], .3],
 
         "VP > Right > Modules" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*WithSupport_pvModule/], true],
         "VP > Right > Support" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*Foot/,
                                    /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*Nikhef/,
                                    /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*Clamp/], true],
-        "VP > Right > RFFoil" : [["_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight_pvRightRFFoil"], false],
-        "VP > Right > DeliveryPipes" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*DeliveryPipe/,
-                                         /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*Braze/,
-                                         /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*CoolingConnector/], false],
         "VP > Right > Structure" : [["_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight_pvRightDetSup"], .3],
         // UT
         "UT" : [["_dd_Geometry_BeforeMagnetRegion_UT_lvUT_pvUTFrame",
@@ -97,7 +86,7 @@
         "Rich1 > Mag" : [["_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1SubMaster_pvRich1Mag"], true],
         "Rich1 > Mirrors" : [["_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1Mirror"], true],
         "Rich1 > Exit" : [["_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1SubMaster_pvRich1Exit"], false],
-
+        
         // Magnet
         "Magnet > Support" : [["_dd_Structure_LHCb_MagnetRegion_Magnet_Left_Vertical_Part",
                                "_dd_Structure_LHCb_MagnetRegion_Magnet_Right_Vertical_Part",
