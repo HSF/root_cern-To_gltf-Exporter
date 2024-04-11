@@ -100,6 +100,27 @@ That's it, you should be able to download the GLFT resulting file.
 You can then open it with [phoenix](https://github.com/HSF/phoenix)
 
 
+### Optimizing the resulting file
+
+There are ways to significantly reduce the size of the resulting gltf file without impacting the vizualization, mostly by cleaning up the data (e.g. dropping non significant digits) but also by using the glb format, some sort of binary version of gltf.
+
+One easy tool to use there is gltf-pipeline, available at https://github.com/CesiumGS/gltf-pipeline. Here is an example usage :
+
+```shell
+> ls -l lhcb.gltf
+-rw-r--r-- 1 sponce z5     8356678 Apr 10 18:38 lhcb.gltf
+> gltf-pipeline.js -i lhcb.gltf -o lhcb-draco.gltf -d # Draco compression
+> ls -l lhcb-draco.gltf
+-rw-r--r-- 1 sponce z5     4697745 Apr 11 07:52 lhcb-draco.gltf
+> gltf-pipeline.js -i lhcb.gltf -o lhcb-draco.glb -d -b # Draco compression + binary format
+> ls -l lhcb-draco.glb
+-rw-r--r-- 1 sponce z5     2690296 Apr 11 07:53 lhcb-draco.glb
+> zip lhcb-draco.glb.zip lhcb-draco.glb # you can still compress it
+> ls -l lhcb-draco.glb.zip
+-rw-r--r-- 1 sponce z5      351963 Apr 11 07:56 lhcb-draco.glb.zip
+
+```
+
 ## Starting from gdml data
 
 The gdml file can be converted to root easily.
