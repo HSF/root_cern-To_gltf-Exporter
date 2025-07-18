@@ -18,10 +18,14 @@ The exporter is essentially a script (written in javascript) which you will exec
 
 ```html
   <head>
-    <script src="https://unpkg.com/three@0.139.1/build/three.js"> </script>
-    <script> import * as THREE from 'three'; </script>
-    <script src="https://unpkg.com/three@0.139.1/examples/js/exporters/GLTFExporter.js"> </script>
-    <script src="https://root.cern/js/latest/scripts/JSRoot.core.js"> </script>
+    <script type="importmap"> {
+     "imports": {
+         "three": "https://unpkg.com/three@0.178.0/build/three.module.js",
+         "gltfexporter" : "https://unpkg.com/three@0.178.0/examples/jsm/exporters/GLTFExporter.js",
+         "root" : "https://root.cern/js/7.9.0/modules/main.mjs",
+         "rootgeom" : "https://root.cern/js/7.9.0/modules/geom/TGeoPainter.mjs"
+      } }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.js"></script>
   </head>
 ```
@@ -80,15 +84,16 @@ See [export_LHCb.html](export_LHCb.html) for a more complete example
  3. Calling the exporter code
 
 ```javascript
-    convertGeometry("./LHCb.root", "lhcb.gltf", 4, subparts, hide_children);
+    convertGeometry("./LHCb.root", "lhcb.gltf", 4, subparts, hide_children, objectName = "default", nFaces = 24);
 ```
 Here we call the conversion function. Parameters are :
  * the input file name
  * the name of the output file
  * the maximum depth to consider for the conversion. Anything below will be discarded
- * hide_children array of paths prefix for nodes that should be ignored (see Data above)
  * subparts definition of the subparts to create in the geometry (see Data above)
-
+ * hide_children array of paths prefix for nodes that should be ignored (see Data above)
+ * (optional) the name of the top level object to consider in the input ROOT file
+ * (optional) the number of faces to be used for spheres/circles in the resulting geometry
 
 ### How to run the exporter: 
 
@@ -128,7 +133,7 @@ Just type this in a root prompt :
 ```cpp
 TGeoManager::LockDefaultUnits(false);
 TGeoManager::SetDefaultUnits(TGeoManager::kG4Units);
-TGeoManager::Import("LHCb_Upgrade.gdml")
-TGeoManager::Export("LHCb_Upgrade.root")
+auto g = TGeoManager::Import("LHCb_Upgrade.gdml")
+g->Export("LHCb_Upgrade.root")
 ```
 Note the usage of `kG4Units` here. this sets the length unit to millimeters. Use `kRootUnits` for centimeters.
