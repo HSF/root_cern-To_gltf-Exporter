@@ -8,6 +8,10 @@
  *   - simplifies the geometry for spheres and cones to avoid too many faces
  *   - deduplicate materials in the resulting gltf file
  */
+import { Scene } from "three"
+import { GLTFExporter } from "gltfexporter"
+import { openFile, geoCfg } from "root"
+import { build } from "rootgeom"
 
 /// checks whether a name matches one of the given paths
 function matches(name, paths) {
@@ -128,7 +132,7 @@ async function deduplicate(gltf, body) {
 async function convert_geometry(obj3d, name, body) {
     body.innerHTML += "<h2>Exporting to GLTF</h2>"
     await forceDisplay()
-    const exporter = new THREE.GLTFExporter;
+    const exporter = new GLTFExporter();
     let gltf = await new Promise((resolve, reject) =>
         exporter.parse(obj3d, resolve, reject, {'binary':false})
     )
@@ -225,7 +229,7 @@ function keep_only_subpart(volume, paths) {
 /**
  * Removes children nodes that are not matching paths
  * these should never have been created, but jsRoot has limitations and may create
- * unwanted children in cases where the smae logical volume is shared by several physical
+ * unwanted children in cases where the same logical volume is shared by several physical
  * volumes out of which some should be visible and others not.
  * Root is never checking the flags of the physical volumes, only of the logical one,
  * creating this situation
@@ -256,7 +260,6 @@ function cleanupChildren(child, paths) {
  *        false means not visible, true means visible, float means visible with that opacity
  */
 async function internal_convert_geometry(obj, filename, max_level, subparts, hide_children, body, nFaces) {
-    const geo = await JSROOT.require('geom')
     const scenes = [];
     // for each geometry subpart, duplicate the geometry and keep only the subpart
     body.innerHTML += "<h2>Generating all scenes (one per subpart)</h2>"
@@ -269,7 +272,7 @@ async function internal_convert_geometry(obj, filename, max_level, subparts, hid
         cleanup_geometry(obj.fNodes.arr[0], hide_children, max_level);
         // dump to gltf, using one scene per subpart
         // set nb of degrees per face for circles approximation to nFaces
-        geo.geoCfg('GradPerSegm', 360/nFaces);
+        geoCfg('GradPerSegm', 360/nFaces);
         const paths = entry[0];
         const visibility = entry[1];
         // extract subpart of ROOT geometry
@@ -279,9 +282,9 @@ async function internal_convert_geometry(obj, filename, max_level, subparts, hid
         setVisible(obj.fNodes.arr[0]);
         keep_only_subpart(obj.fMasterVolume, paths);
         // convert to gltf
-        var scene = new THREE.Scene();
+        var scene = new Scene();
         scene.name = name;
-        var children = geo.build(obj, {dflt_colors: true, vislevel:10, numfaces: 10000000, numnodes: 500000});
+        var children = build(obj, {dflt_colors: true, vislevel:10, numfaces: 10000000, numnodes: 500000});
         // remove from children paths that should not be there
         cleanupChildren(children, paths)
         scene.children.push( children );
@@ -294,12 +297,13 @@ async function internal_convert_geometry(obj, filename, max_level, subparts, hid
     }
     body.innerHTML += '</br>' + scenes.length + ' scenes generated</br>';
     await forceDisplay()
-    await convert_geometry(scenes, filename, body);}
-   
+    await convert_geometry(scenes, filename, body);
+}
+
 async function convertGeometry(inputFile, outputFile, max_level, subparts, hide_children, objectName = "Default", nFaces = 24) {
     const body = document.body
     body.innerHTML = "<h1>Converting ROOT geometry to GLTF</h1>Input file : " + inputFile + "</br>Output file : " + outputFile + "</br>Reading input..." 
-    const file = await JSROOT.openFile(inputFile)
+    const file = await openFile(inputFile)
     const obj = await file.readObject(objectName + ";1")
     await internal_convert_geometry(obj, outputFile, max_level, subparts, hide_children, body, nFaces)
     body.innerHTML += "<h1>Convertion succeeded !</h1>"

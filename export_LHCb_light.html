@@ -1,9 +1,14 @@
 <html>
 
   <head>
-    <script src="https://unpkg.com/three@0.139.1/build/three.js"> </script>
-    <script src="https://unpkg.com/three@0.139.1/examples/js/exporters/GLTFExporter.js"> </script>
-    <script src="https://root.cern/js/7.6.1/scripts/JSRoot.core.js"> </script>
+    <script type="importmap"> {
+     "imports": {
+         "three": "https://unpkg.com/three@0.178.0/build/three.module.js",
+         "gltfexporter" : "https://unpkg.com/three@0.178.0/examples/jsm/exporters/GLTFExporter.js",
+         "root" : "https://root.cern/js/7.9.0/modules/main.mjs",
+         "rootgeom" : "https://root.cern/js/7.9.0/modules/geom/TGeoPainter.mjs"
+      } }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.js"></script>
   </head>
 
