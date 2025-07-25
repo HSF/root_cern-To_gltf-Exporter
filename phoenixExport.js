@@ -167,10 +167,6 @@ function fixSphereShapes(shape) {
 // makes given node visible
 function setVisible(node) {
     node.fVolume.fGeoAtt = (node.fVolume.fGeoAtt | kVisThis);
-    // Change the number of faces for sphere so that we avoid having
-    // megabytes for the Rich mirrors, which are actually almost flat
-    // Default was 20 and 11
-    fixSphereShapes(node.fVolume.fShape)
 }
 // makes given node's daughters visible
 function setVisibleDaughter(node) {
@@ -182,7 +178,13 @@ function setInvisible(node) {
 }
 // makes given node and all its children recursively visible
 function set_visible_recursively(node) {
-    setVisible(node);
+    if (node.fVolume.fFillStyle != 0) {
+        setVisible(node);
+    }
+    // Change the number of faces for sphere so that we avoid having
+    // megabytes for the Rich mirrors, which are actually almost flat
+    // Default was 20 and 11
+    fixSphereShapes(node.fVolume.fShape)
     if (node.fVolume.fNodes) {
         for (var j = 0; j < node.fVolume.fNodes.arr.length; j++) {
             var snode = node.fVolume.fNodes.arr[j];
