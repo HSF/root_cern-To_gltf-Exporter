@@ -159,13 +159,12 @@
     "FT > Station62 > X2" : [[/lvFT.*lvStation6_2_lvLayer6X2_5_6/], .1],
 
     // Rich2
-    "Rich2 > Support" : [[/lvRich2Master.*pvRich2SuperStrAir/], true],
-    "Rich2 > Windows" : [[/lvRich2Master.*(Entry|Exiy)Win/], .1],
+    "Rich2 > Support" : [[/lvRich2Master.*Rich2Rod/, /lvRich2Master.*Rich2Square/], true],
+    "Rich2 > Windows" : [[/lvRich2Master.*(Entry|Exit)Win/], .1],
     "Rich2 > Box" : [[/lvRich2Master.*pvRich2GasCont/, /lvRich2Master.*pvRich2MagSh/], .3],
     "Rich2 > Hex Mirrors" : [[/lvRich2Master.*pvRich2GasEnclosure_pvRich2SphMirrorMaster._pv/], true],
     "Rich2 > Sec Mirrors" : [[/lvRich2Master.*pvRich2GasEnclosure_pvRich2SecMirrorMaster._pv/], true],
-    "Rich2 > HPD" : [[/lvRich2Master.*pvRich2PhDetGasEncl._pvRich2PhDetPanel._pvRich2Pmt.*_pvRich.*pv/], true],
-    "Rich2 > HPD Rough" : [[/lvRich2Master.*pvRich2PhDetGasEncl/], true],
+    "Rich2 > HPD" : [[/lvRich2Master.*pvRich2PhDetGasEncl/], true],
 
     // Neutron shielding
     "NeutronShielding" : [[/lvNeutronShielding/], .3],
