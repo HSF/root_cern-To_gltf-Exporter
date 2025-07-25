@@ -189,8 +189,7 @@ function set_visible_recursively(node) {
     // Default was 20 and 11
     fixSphereShapes(node.fVolume.fShape)
     if (node.fVolume.fNodes) {
-        for (var j = 0; j < node.fVolume.fNodes.arr.length; j++) {
-            var snode = node.fVolume.fNodes.arr[j];
+        for (var snode of node.fVolume.fNodes.arr) {
             set_visible_recursively(snode);
         }
     }
@@ -199,8 +198,7 @@ function set_visible_recursively(node) {
 function set_invisible_recursively(node) {
     setInvisible(node);
     if (node.fVolume.fNodes) {
-        for (var j = 0; j < node.fVolume.fNodes.arr.length; j++) {
-            var snode = node.fVolume.fNodes.arr[j];
+        for (var snode of node.fVolume.fNodes.arr) {
             set_invisible_recursively(snode);
         }
     }
@@ -234,6 +232,30 @@ function keep_only_subpart(node, paths, fullPath, path='_') {
         }
     }
     return anyfound;
+}
+
+/**
+ * Counts the number of objects in a hierarchy
+ */
+function countGLTFObjects(node) {
+    var n = node.children.length;
+    for (var child of node.children) {
+        n += countGLTFObjects(child);
+    }
+    return n;
+}
+
+/**
+ * Counts the number of objects in a hierarchy
+ */
+function countRootObjects(volume) {
+    var n = volume.fNodes.arr.length;
+    for (var child of volume.fNodes.arr) {
+        if (child.fVolume.fNodes) {
+            n += countRootObjects(child.fVolume);
+        }
+    }
+    return n;
 }
 
 /**
@@ -276,13 +298,12 @@ async function internal_convert_geometry(obj, filename, max_level, subparts, hid
     const scenes = [];
     // for each geometry subpart, duplicate the geometry and keep only the subpart
     body.innerHTML += "<h2>Generating all scenes (one per subpart)</h2>"
+    // drop nodes we do not want to see at all (usually too detailed parts)
+    cleanup_geometry(obj.fNodes.arr[0], hide_children, max_level, fullPath);
+    body.innerHTML += "  initial Root file has " + countRootObjects(obj) + " objects (after cleanup)</br>"
     await forceDisplay()
 
     for (const [name, entry] of Object.entries(subparts)) {
-        body.innerHTML += "  " + name + "</br>"
-        await forceDisplay()
-        // drop nodes we do not want to see at all (usually too detailed parts)
-        cleanup_geometry(obj.fNodes.arr[0], hide_children, max_level);
         // dump to gltf, using one scene per subpart
         // set nb of degrees per face for circles approximation to nFaces
         geoCfg('GradPerSegm', 360/nFaces);
@@ -307,6 +328,8 @@ async function internal_convert_geometry(obj, filename, max_level, subparts, hid
         } else {
             scene.userData = {"visible" : true, "opacity" : visibility};
         }
+        body.innerHTML += "  " + name + " -> " + countGLTFObjects(children) + " objects</br>"
+        await forceDisplay()
         scenes.push(scene);
     }
     body.innerHTML += '</br>' + scenes.length + ' scenes generated</br>';
