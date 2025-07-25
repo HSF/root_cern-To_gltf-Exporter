@@ -1,9 +1,14 @@
 <html>
 
   <head>
-    <script src="https://unpkg.com/three@0.139.1/build/three.js"> </script>
-    <script src="https://unpkg.com/three@0.139.1/examples/js/exporters/GLTFExporter.js"> </script>
-    <script src="https://root.cern/js/7.6.1/scripts/JSRoot.core.js"> </script>
+    <script type="importmap"> {
+     "imports": {
+         "three": "https://unpkg.com/three@0.178.0/build/three.module.js",
+         "gltfexporter" : "https://unpkg.com/three@0.178.0/examples/jsm/exporters/GLTFExporter.js",
+         "root" : "https://root.cern/js/7.9.0/modules/main.mjs",
+         "rootgeom" : "https://root.cern/js/7.9.0/modules/geom/TGeoPainter.mjs"
+      } }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.js"></script>
   </head>
 
@@ -13,149 +18,190 @@
     import { convertGeometry } from './phoenixExport.js';
 
     var hide_children = [
+    // uncomment one to remove that part from the export
+/*
+        /lvUpstreamRegion/,
+        /lvBeforeMagnetRegion_lvBeforeVelo/,
+        /lvBeforeMagnetRegion_lvRich1Master/,
+        /lvBeforeMagnetRegion_lvVP/,
+        /lvBeforeMagnetRegion_lvPipe/,
+        /lvBeforeMagnetRegion_lvUT/,
+        /lvMagnetRegion/,
+        /lvAfterMagnetRegion/,
+        /lvDownstreamRegion_lvEcal/,
+        /lvDownstreamRegion_lvHcal/,
+        /lvDownstreamRegion_lvMuon/,
+        /lvDownstreamRegion_lvAfterMuon/,
+        /lvDownstreamRegion_lvUX85Downstream/,
+*/
+        // VP
+        /lvVP.*pvGlue/,
+        /lvVP.*pvBumpBond/,
+        /lvVP.*BrazeSocket.*Metal/,
 
-        // Drop Rich1 DetSupFrame and QuadrantModule
-        "_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1PhDetSupFrame",
-        "_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1Mirror1QuadrantModule",
-        
-        // Drop UT Staves
-        "_dd_Geometry_BeforeMagnetRegion_UT_Staves",
-    
-        // Drop FT modules and frames
-        "_dd_Geometry_AfterMagnetRegion_T_FT_Modules",
-        "_dd_Geometry_AfterMagnetRegion_T_FT_CFrames",
+        // Rich1
+        /pvRich1Pmt/,
 
-        // Drop Rich2 Modules
-        "_dd_Geometry_BeforeMagnetRegion_Rich1_Rich2StdPmtModule",
-        "_dd_Geometry_BeforeMagnetRegion_Rich1_Rich2GrandPmtModule",
-        
-        // Drop Ecal Blocks
-        "_dd_Geometry_DownstreamRegion_Ecal_Installation_InnBlock",
-        "_dd_Geometry_DownstreamRegion_Ecal_Installation_MidBlock",
-        "_dd_Geometry_DownstreamRegion_Ecal_Installation_OutBlock",
+        // UT
+        /lvUT.*pvStave.Front/,
+        /lvUT.*pvStave.Back/,
+        /lvUT.*pvCable/,
 
-        // Drop Hcal modules
-        "_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalInnHalfModule",
-        "_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalOutHalfModule",
-        "_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalInnMidlHalfModule",
-        
-        // Drop Muon Chambers
-        "_dd_Geometry_DownstreamRegion_Muon_M2",
-        "_dd_Geometry_DownstreamRegion_Muon_M3",
-        "_dd_Geometry_DownstreamRegion_Muon_M4",
-        "_dd_Geometry_DownstreamRegion_Muon_M5",
+        // Rich2
+        /pvRich2PhDetPanel/,
 
+        // Drop Ecal Modules
+        /lvEcal.*InnBlock/,
+        /lvEcal.*MidBlock/,
+        /lvEcal.*OutBlock/,
+
+        // Drop Hcal Modules
+        /lvHcal.*Module/,
+
+        // drop Muon Chambers
+        /lvMuon.*Cham.*Gap/,
+        /lvMuon.*Cham.*EndCap.*EndCap/,
+        /lvMuon.*HalfFilter/,
     ];
 
     // for each level of hierarchy in the phoenix menu, tell which parts of the geometry to
     // use and whether they are initially visible or not.
     var subparts = {
-        // Beam pipe
-        "BeamPipe > UTPipe" : [["_dd_Geometry_BeforeMagnetRegion_UT_lvUT_pvUTBoxPlug",
-                                "_dd_Geometry_BeforeMagnetRegion_UT_lvUT_pvUTJacket",
-                                "_dd_Geometry_BeforeMagnetRegion_UT_lvUT_pvUX85",
-                                "_dd_Geometry_BeforeMagnetRegion_UT_lvUT_pvUTPipe"], true],
-        "BeamPipe > VPPipe" : [["_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvDown",
-                                "_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvUpStreamPipe",
-                                "_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvUpStreamWake"], true],
-        "BeamPipe > Rich1Pipe" : [["_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1Master_pvUX85",
-                                   "_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1SubMaster_pvUX85"], true],
-        "BeamPipe > MagnetPipe" : [["_dd_Structure_LHCb_MagnetRegion_PipeInMagnet"], true],
-        "BeamPipe > MagnetPipesupport" : [["_dd_Structure_LHCb_MagnetRegion_PipeSupport"], true],
-        "BeamPipe > PipeInT" : [["_dd_Structure_LHCb_AfterMagnetRegion_T_PipeInT_"], true],
-        "BeamPipe > AfterMagnetPipe" : [["_dd_Structure_LHCb_AfterMagnetRegion_Pipe"], true],
-        "BeamPipe > DownstreamPipe" : [["_dd_Structure_LHCb_DownstreamRegion_PipeDownstream"], true],
-        "BeamPipe > DownstreamPipeSupport" : [["_dd_Structure_LHCb_DownstreamRegion_PipeSupport"], true],
-        "BeamPipe > DownstreamPipeBakeout" : [["_dd_Structure_LHCb_DownstreamRegion_PipeBakeout"], true],
-        // VP
-        "VP > Left > Modules" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*WithSupport_pvModule/,], true],
-        "VP > Left > Support" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*Foot/,
-                                  /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*Nikhef/,
-                                  /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*Clamp/], true],
-        "VP > Left > RFFoil" : [["_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft_pvLeftRFFoil"], false],
-        "VP > Left > DeliveryPipes" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*DeliveryPipe/,
-                                        /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*Braze/,
-                                        /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft.*CoolingConnector/], false],
-        "VP > Left > Structure" : [["_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPLeft_pvLeftDetSup"], .3],
 
-        "VP > Right > Modules" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*WithSupport_pvModule/], true],
-        "VP > Right > Support" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*Foot/,
-                                   /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*Nikhef/,
-                                   /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*Clamp/], true],
-        "VP > Right > RFFoil" : [["_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight_pvRightRFFoil"], false],
-        "VP > Right > DeliveryPipes" : [[/_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*DeliveryPipe/,
-                                         /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*Braze/,
-                                         /_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight.*CoolingConnector/], false],
-        "VP > Right > Structure" : [["_dd_Geometry_BeforeMagnetRegion_VP_lvVP_pvVPRight_pvRightDetSup"], .3],
-        // UT
-        "UT" : [["_dd_Geometry_BeforeMagnetRegion_UT_lvUT_pvUTFrame",
-                 "_dd_Geometry_BeforeMagnetRegion_UT_lvUT_pvUTBox0x",
-                 "_dd_Geometry_BeforeMagnetRegion_UT_lvUT_pvUTa"], .3],
-        // Rich1
-        "Rich1 > Support" : [["_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1Master_pvRich1Mgs",
-                              "_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1SubMaster_pvRich1Mgs"], .3],
-        "Rich1 > Mag" : [["_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1SubMaster_pvRich1Mag"], true],
-        "Rich1 > Mirrors" : [["_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1Mirror"], true],
-        "Rich1 > Exit" : [["_dd_Geometry_BeforeMagnetRegion_Rich1_lvRich1SubMaster_pvRich1Exit"], false],
+    // Beam pipe
+    "BeamPipe > UpstreamPipe" : [[/lvPipeUpstream/, /lvPipeBeforeVelo/,
+                                  /lvBeforeVelo.*lvUX84/, /lvBeforeVelo.*lvPipe/], true],
+    "BeamPipe > VPPipe" : [[/lvVP.*lvVelo/, /lvVP.*CellFixed/, /lvVP.*pvVPMotion.*CellHalf/,
+                            /lvVP.*pvDownstreamWakeFieldCone/], true],
+    "BeamPipe > Rich1Pipe" : [[/lvRich1Master.*UX85/], true],
+    "BeamPipe > UTPipe" : [[/lvUT.*lvUTJacket/, /lvUT.*lvUTPipe/, /lvUT.*lvUX85/], true],
+    "BeamPipe > MagnetPipe" : [[/lvUX85InMagnet/, /lvUX85SupportsInMagnet/], true],
+    "BeamPipe > FTPipe" : [[/lvT.*UX85/], true],
+    "BeamPipe > Rich2Pipe" : [[/lvAfterMagnetRegion.*pvRich2Tube/, /lvAfterMagnetRegion.*UX85Bakeout/], true],
+    "BeamPipe > DownStreamPipe" : [[/lvUX85.*Downstream/, /UX85SupportsAfterMagnet/], true],
+    "BeamPipe > AfterMuonPipe" : [[/lvPipeAfterMuon/], true],
 
-        // Magnet
-        "Magnet > Support" : [["_dd_Structure_LHCb_MagnetRegion_Magnet_Left_Vertical_Part",
-                               "_dd_Structure_LHCb_MagnetRegion_Magnet_Right_Vertical_Part",
-                               "_dd_Structure_LHCb_MagnetRegion_Magnet_Upper_Horizontal_Part",
-                               "_dd_Structure_LHCb_MagnetRegion_Magnet_Lower_Horizontal_Part"], .3],
-        "Magnet > Coil" : [["_dd_Structure_LHCb_MagnetRegion_Magnet_UpperCoil",
-                            "_dd_Structure_LHCb_MagnetRegion_Magnet_LowerCoil"], true],
-        // FT
-        "FT" : [["_dd_Geometry_AfterMagnetRegion_T_FT_Stations"], .3],
-        
-        // Rich2
-        "Rich2 > Support" : [["_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2AirBox",
-                                "_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2AirTrap"], true],
-        "Rich2 > Tube" : [["_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2Master_pvRich2Tube"], true],
-        "Rich2 > Windows" : [["_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2Master_pvRich2EntryWindow",
-                            "_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2Master_pvRich2ExitWindow"], false],
-        "Rich2 > Box" : [["_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2Master_pvRich2GasCont",
-                          "_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2Master_pvRich2MagSh"], .3],
-        "Rich2 > Mirrors" : [["_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2SphMirror",
-                              "_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2SecMirror",
-                              "_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2Master_pvRich2QuartzWindow"], true],
-        "Rich2 > HPD" : [["_dd_Geometry_AfterMagnetRegion_Rich2_lvRich2Master_pvRich2HPDN2Encl"], .3],
+    "UpStream > MBXW > MagnetYoke" : [[/lvMBXWUp.*lvMagnetYoke/], .3],
+    "UpStream > MBXW > MagnetCoil" : [[/lvMBXWUp.*lvMagnet.*Coil/], true],
+    "UpStream > MBXWS > MagnetYoke" : [[/lvMBXWSUp.*lvMagnetYoke/], .3],
+    "UpStream > MBXWS > MagnetCoil" : [[/lvMBXWSUp.*lvMagnet.*Coil/], true],
+    "UpStream > BlockWalls" : [[/lvBlockWall/], .2],
+    "UpStream > Bcm" : [[/lvBeforeVelo.*lvBcm/], true],
+   
+    // VP
+    "VP > Tank" : [[/lvVP.*pvVacTank/], .1],
 
-        // Neutron shielding
-        "NeutronShielding" : [["_dd_Structure_LHCb_DownstreamRegion_NeutronShielding"], .3],
+    "VP > Left > Support" : [[/lvVP.*Left.*pvSupportFoot_pv/,
+                              /lvVP.*Left.*lvDeliveryPipe/,
+                              /lvVP.*Left.*pvLVHarness/,
+                              /lvVP.*Left.*Nikhef/,
+                              /lvVP.*Left.*BrazeSocket/,
+                              /lvVP.*Left.*PipeVCR/,
+                              /lvVP.*Left.*CoolingConnector/], true],
+    "VP > Left > Structure" : [[/lvVP.*_pvVPLeft_pvRFBoxLeft/, /lvVP.*_pvVPLeft_pvDetSupLeft_Det/], .3],
+    "VP > Left > RFFoil" : [[/lvVP.*_pvVPLeft_pvRFFoilLeft/], false],
+    "VP > Left > Modules > Substrate" : [[/lvVP.*Left.*pvHybrid.*Substra/], .3],
+    "VP > Left > Modules > Chips" : [[/lvVP.*Left.*pvHybrid.*GBTX/,
+                                      /lvVP.*Left.*pvHybrid.*HYB/,
+                                      /lvVP.*Left.*pvChip/], true],
 
-        // Ecal
-        "Ecal > Fiber" : [["_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalLeft_Fiber",
-                           "_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalRight_Fiber"], false],
-        "Ecal > InnSupport" : [["_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalLeft_InnSupport",
-                                "_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalRight_InnSupport"], true],
-        "Ecal > Inner" : [["_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalLeft_EcalAInner",
-                           "_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalRight_EcalCInner"], .3],
-        "Ecal > Middle" : [["_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalLeft_EcalAMiddle",
-                            "_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalRight_EcalCMiddle"], .3],
-        "Ecal > Outer" : [["_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalLeft_EcalAOuter",
-                           "_dd_Geometry_DownstreamRegion_Ecal_Installation_EcalRight_EcalCOuter"], .3],
-        // Hcal
-        "Hcal > Inner" : [["_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalInnerSectionRight_pvHcalInnHalfModule",
-                           "_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalInnerSectionLeft_pvHcalInnHalfModule"], .3],
-        "Hcal > InnerShielding" : [["_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalInnerSectionRight_pvHcalInnerShielding",
-                                    "_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalInnerSectionLeft_pvHcalInnerShielding"], true],
-        "Hcal > InnerReinforce" : [["_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalInnerSectionRight_pvInnerReinforce",
-                                    "_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalInnerSectionLeft_pvInnerReinforce"], .3],
-        "Hcal > Outer" : [["_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalOuterSectionLeft_pvHcalOutHalfModule",
-                           "_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalOuterSectionRight_pvHcalOutHalfModule"], .3],
-        "Hcal > OuterReinforce" : [["_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalOuterSectionLeft_pvOuterReinforce",
-                                    "_dd_Geometry_DownstreamRegion_Hcal_Installation_lvHcalOuterSectionRight_pvOuterReinforce"], .3],
-        // Muon
-        "Muon > Back" : [["_dd_Geometry_DownstreamRegion_Muon_lvMuonBack_pvM2",
-                          "_dd_Geometry_DownstreamRegion_Muon_lvMuonBack_pvM3",
-                          "_dd_Geometry_DownstreamRegion_Muon_lvMuonBack_pvM4",
-                          "_dd_Geometry_DownstreamRegion_Muon_lvMuonBack_pvM5"],true],
-        "Muon > Filter" : [["_dd_Geometry_DownstreamRegion_Muon_lvMuonBack_pvMuFilter"], .3],
+    "VP > Right > Support" : [[/lvVP.*Right.*pvSupportFoot_pv/,
+                               /lvVP.*Right.*lvDeliveryPipe/,
+                               /lvVP.*Right.*pvLVHarness/,
+                               /lvVP.*Right.*Nikhef/,
+                               /lvVP.*Right.*BrazeSocket/,
+                               /lvVP.*Right.*PipeVCR/,
+                               /lvVP.*Right.*CoolingConnector/], true],
+    "VP > Right > Structure" : [[/lvVP.*_pvVPRight_pvRFBoxRight/, /lvVP.*_pvDetSupRight_Det/], .3],
+    "VP > Right > RFFoil" : [[/lvVP.*_pvVPRight_pvRFFoilRight/], false],
+    "VP > Right > Modules > Substrate" : [[/lvVP.*Right.*pvHybrid.*Substra/], .3],
+    "VP > Right > Modules > Chips" : [[/lvVP.*Right.*pvHybrid.*GBTX/,
+                                      /lvVP.*Right.*pvHybrid.*HYB/,
+                                      /lvVP.*Right.*pvChip/], true],
 
+    // Rich1
+    "Rich1 > Support" : [[/lvRich1Master.*pvRich1Mgs/], .3],
+    "Rich1 > Mag" : [[/lvRich1Master.*pvRich1MagShH._pvRich1/], true],
+    "Rich1 > Mirror1" : [[/lvRich1Master.*pvRich1Mirror1QuadrantModuleQ._pv/], true],
+    "Rich1 > Mirror2" : [[/lvRich1Master.*pvRich1Mirror2Q.Master_pv/], true],
+    "Rich1 > ExitWall" : [[/lvRich1Master.*pvRich1ExitWallMaster_pv/,
+                           /lvRich1Master.*pvRich1ExitDia/], true],
+
+    // UT
+    "UT > Fibers > aXLayer" : [[/lvUT.*lvUT[AC]_._[pl]vUTaX/], .3],
+    "UT > Fibers > aULayer" : [[/lvUT.*lvUT[AC]_._[pl]vUTaU/], .3],
+    "UT > Fibers > bVLayer" : [[/lvUT.*lvUT[AC]_._[pl]vUTbV/], .3],
+    "UT > Fibers > bXLayer" : [[/lvUT.*lvUT[AC]_._[pl]vUTbX/], .3],
+    "UT > Frame" : [[/lvUT.*lvUTFrame/], true],
+    "UT > Box" : [[/lvUT.*lvUTBox/], false],
+    
+    // Magnet
+    "Magnet > Support" : [[/MagnetEnvelope.*(Vertical|Horizontal)_Part/], .3],
+    "Magnet > Coil" : [[/MagnetEnvelope.*Coil/], true],
+ 
+    // FT
+    "FT > Station50 > Support" : [[/lvFT.*lvStation5_0_lvCFramePair_._pv/], true],
+    "FT > Station50 > X1" : [[/lvFT.*lvStation5_0_lvLayer5X1_2_5/], .1],
+    "FT > Station50 > U" : [[/lvFT.*lvStation5_0_lvLayer5U_3_5/], .1],
+    "FT > Station50 > V" : [[/lvFT.*lvStation5_0_lvLayer5V_4_5/], .1],
+    "FT > Station50 > X2" : [[/lvFT.*lvStation5_0_lvLayer5X2_5_5/], .1],
+
+    "FT > Station51 > Support" : [[/lvFT.*lvStation5_1_lvCFramePair_._pv/], true],
+    "FT > Station51 > X1" : [[/lvFT.*lvStation5_1_lvLayer5X1_2_5/], .1],
+    "FT > Station51 > U" : [[/lvFT.*lvStation5_1_lvLayer5U_3_5/], .1],
+    "FT > Station51 > V" : [[/lvFT.*lvStation5_1_lvLayer5V_4_5/], .1],
+    "FT > Station51 > X2" : [[/lvFT.*lvStation5_1_lvLayer5X2_5_5/], .1],
+
+    "FT > Station62 > Support" : [[/lvFT.*lvStation6_2_lvCFramePair_._pv/], true],
+    "FT > Station62 > X1" : [[/lvFT.*lvStation6_2_lvLayer6X1_2_6/], .1],
+    "FT > Station62 > U" : [[/lvFT.*lvStation6_2_lvLayer6U_3_6/], .1],
+    "FT > Station62 > V" : [[/lvFT.*lvStation6_2_lvLayer6V_4_6/], .1],
+    "FT > Station62 > X2" : [[/lvFT.*lvStation6_2_lvLayer6X2_5_6/], .1],
+
+    // Rich2
+    "Rich2 > Support" : [[/lvRich2Master.*pvRich2SuperStrAir/], true],
+    "Rich2 > Windows" : [[/lvRich2Master.*(Entry|Exiy)Win/], .1],
+    "Rich2 > Box" : [[/lvRich2Master.*pvRich2GasCont/, /lvRich2Master.*pvRich2MagSh/], .3],
+    "Rich2 > Hex Mirrors" : [[/lvRich2Master.*pvRich2GasEnclosure_pvRich2SphMirrorMaster._pv/], true],
+    "Rich2 > Sec Mirrors" : [[/lvRich2Master.*pvRich2GasEnclosure_pvRich2SecMirrorMaster._pv/], true],
+    "Rich2 > HPD" : [[/lvRich2Master.*pvRich2PhDetGasEncl._pvRich2PhDetPanel._pvRich2Pmt.*_pvRich.*pv/], true],
+    "Rich2 > HPD Rough" : [[/lvRich2Master.*pvRich2PhDetGasEncl/], true],
+
+    // Neutron shielding
+    "NeutronShielding" : [[/lvNeutronShielding/], .3],
+
+    // Ecal
+    "Ecal > Shield" : [[/pvEcal.*lvShield/], false],
+    "Ecal > Plug" : [[/pvEcal.*PlugSupport.*Steel/], .3],
+    "Ecal > Inner" : [[/pvEcal.*InnRegion/], .3],
+    "Ecal > Middle" : [[/pvEcal.*MidRegion/], .3],
+    "Ecal > Outer" : [[/pvEcal.*OutRegion/], .3],
+
+    // Hcal
+    "Hcal > Plug" : [[/lvHcal.*PlugSupport.*Steel/], .3],
+    "Hcal > Inner" : [[/lvHcal.*InnRegion/], .3],
+    "Hcal > Outer" : [[/lvHcal.*OutRegion/], .3],
+    "Hcal > InnerReinforce" : [[/lvHcal.*InnerReinforce/], false],
+    "Hcal > OuterReinforce" : [[/lvHcal.*OuterReinforce/], false],
+
+    // Muon
+    "Muon > Plug" : [[/lvMuon.*Plug/], .3],
+    "Muon > M2" : [[/lvMuon.*M2Front/, /lvMuon.*M2Rear/, /lvMuon.*pvM2/], true],
+    "Muon > Filter1" : [[/lvMuon.*pvMuFilter1/], .3],
+    "Muon > M3" : [[/lvMuon.*M3Front/, /lvMuon.*M3Rear/, /lvMuon.*pvM3/], true],
+    "Muon > Filter2" : [[/lvMuon.*pvMuFilter2/], .3],
+    "Muon > M4" : [[/lvMuon.*M4Front/, /lvMuon.*M4Rear/, /lvMuon.*pvM4/], true],
+    "Muon > Filter3" : [[/lvMuon.*pvMuFilter3/], .3],
+    "Muon > M5" : [[/lvMuon.*M5Front/, /lvMuon.*M5Rear/, /lvMuon.*pvM5/], true],
+    "Muon > Filter4" : [[/lvMuon.*pvMuFilter4/], .3],
+
+    "DownStream > Bcm Down" : [[/lvAfterMuon.*lvBcm/], true],
+    "DownStream > MBXW Down > MagnetYoke" : [[/lvMBXWDown.*lvMagnetYoke/], .3],
+    "DownStream > MBXW Down > MagnetCoil" : [[/lvMBXWDown.*lvMagnet.*Coil/], true],
     }
 
-    convertGeometry("./LHCb.root", "lhcb.gltf", 4, subparts, hide_children);
+    //convertGeometry("./LHCb.2025-v00.01.root", "LHCb.2025-v00.01.gltf", 4, subparts, hide_children);
+    convertGeometry("LHCb.root", "LHCb.gltf", 10, subparts, hide_children, true, "default");
 
   </script>
 </body>
