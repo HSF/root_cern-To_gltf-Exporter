@@ -46,13 +46,16 @@ function filterArrayInPlace(a, condition, thisArg) {
  * cleans up the geometry in node by dropping all subtress whose path starts with
  * one of the hidden_paths and all nodes byond a given level
  */
-function cleanup_geometry(node, hidden_paths, max_level=999, level = 0) {
+function cleanup_geometry(node, hidden_paths, max_level, fullPath, level = 0, path='_') {
     if (node.fVolume.fNodes) {
+        path = path + node.fVolume.fName + '_'
         // drop hidden nodes, and everything after level max_level
-        filterArrayInPlace(node.fVolume.fNodes.arr, n=>level<max_level&&!matches(n.fName, hidden_paths));
+        filterArrayInPlace(node.fVolume.fNodes.arr, n=>level<max_level&&!matches((fullPath?path:'')+n.fName, hidden_paths));
         // recurse to children
-        for (const snode of node.fVolume.fNodes.arr) {
-            cleanup_geometry(snode, hidden_paths, max_level, level + 1);
+        if (node.fVolume.fNodes.arr.length > 0) {
+            for (const snode of node.fVolume.fNodes.arr) {
+                cleanup_geometry(snode, hidden_paths, max_level, fullPath, level + 1, path);
+            }
         }
     }
 }
@@ -207,18 +210,23 @@ function set_invisible_recursively(node) {
  * make only the given paths visible in a geometry and returns
  * whether anything at all is visible
  */
-function keep_only_subpart(volume, paths) {
+function keep_only_subpart(node, paths, fullPath, path='_') {
+    if (!node.fVolume) return false;
+    var volume = node.fVolume;
     if (!volume.fNodes) return false;
+    // mimic here the way root to gltf conversion works :
+    // Top node uses master volume name, other use node name
+    var name = (path=='_'?node.fVolume.fName:node.fName);
+    path = path + name +'_';
     var anyfound = false;
-    for (var j = 0; j < volume.fNodes.arr.length; j++) {
-        var snode = volume.fNodes.arr[j];
-        if (matches(snode.fName, paths)) {
-            // need to be resursive in case something deeper was hidden in previous round
+    for (var snode of volume.fNodes.arr) {
+        if (matches((fullPath?path:'')+snode.fName, paths)) {
+            // need to be recursive in case something deeper was hidden in previous round
             set_visible_recursively(snode);
             anyfound=true;
         } else {
             // make daughers visible if a subpart is shown
-            var subpartfound = keep_only_subpart(snode.fVolume, paths);
+            var subpartfound = keep_only_subpart(snode, paths, fullPath, path);
             if (subpartfound) {
                 setVisibleDaughter(snode);
                 anyfound = true;
@@ -236,12 +244,13 @@ function keep_only_subpart(volume, paths) {
  * Root is never checking the flags of the physical volumes, only of the logical one,
  * creating this situation
  */
-function cleanupChildren(child, paths) {
+function cleanupChildren(child, paths, fullPath, path='_') {
     // check all children and call ourselves recursively when we keep one
-    filterArrayInPlace(child.children, n=>n.name==''||matches(n.name, paths));
-    for (var n = 0; n < child.children.length; n++) {
-        cleanupChildren(child.children[n], paths);
-    }
+    filterArrayInPlace(child.children,
+                       n=>n.name=='' ||
+                       matches((fullPath?path:'')+n.name+'_', paths) ||
+                       cleanupChildren(n, paths, fullPath, path+n.name+'_'));
+    return child.children.length > 0;
 }
 
 /**
@@ -252,6 +261,8 @@ function cleanupChildren(child, paths) {
  * @parameter hide_children array of paths prefix for nodes that should be ignored
  * @parameter subparts definition of the subparts to create in the geometry
  * @parameter body the body tag of the page, for writing log to it
+ * @parameter nFaces number of faces to be used for spheres
+ * @parameter fullPath whether to compare subparts and hide_children with full path or only names
  * 
  * subparts is a dictionnary with
  *   - key being the path of the subpart in the phoenix menu, with ' > ' as separator
@@ -261,7 +272,7 @@ function cleanupChildren(child, paths) {
  *      + a boolean or a float between 0 and 1 defining the default visibility of the part
  *        false means not visible, true means visible, float means visible with that opacity
  */
-async function internal_convert_geometry(obj, filename, max_level, subparts, hide_children, body, nFaces) {
+async function internal_convert_geometry(obj, filename, max_level, subparts, hide_children, body, nFaces, fullPath) {
     const scenes = [];
     // for each geometry subpart, duplicate the geometry and keep only the subpart
     body.innerHTML += "<h2>Generating all scenes (one per subpart)</h2>"
@@ -278,17 +289,18 @@ async function internal_convert_geometry(obj, filename, max_level, subparts, hid
         const paths = entry[0];
         const visibility = entry[1];
         // extract subpart of ROOT geometry
+        var masterNode = obj.fNodes.arr[0];
         // first reset visibility to be sure eveything is invisible
-        set_invisible_recursively(obj.fNodes.arr[0])
+        set_invisible_recursively(masterNode)
         // make top node visible
-        setVisible(obj.fNodes.arr[0]);
-        keep_only_subpart(obj.fMasterVolume, paths);
+        setVisible(masterNode);
+        keep_only_subpart(masterNode, paths, fullPath);
         // convert to gltf
         var scene = new Scene();
         scene.name = name;
         var children = build(obj, {dflt_colors: true, vislevel:10, numfaces: 10000000, numnodes: 500000});
         // remove from children paths that should not be there
-        cleanupChildren(children, paths)
+        cleanupChildren(children, paths, fullPath)
         scene.children.push( children );
         if (typeof visibility == "boolean") {
             scene.userData = {"visible" : visibility};
@@ -302,12 +314,12 @@ async function internal_convert_geometry(obj, filename, max_level, subparts, hid
     await convert_geometry(scenes, filename, body);
 }
 
-async function convertGeometry(inputFile, outputFile, max_level, subparts, hide_children, objectName = "Default", nFaces = 24) {
+async function convertGeometry(inputFile, outputFile, max_level, subparts, hide_children, fullPath=false, objectName = "Default", nFaces = 24) {
     const body = document.body
     body.innerHTML = "<h1>Converting ROOT geometry to GLTF</h1>Input file : " + inputFile + "</br>Output file : " + outputFile + "</br>Reading input..." 
     const file = await openFile(inputFile)
     const obj = await file.readObject(objectName + ";1")
-    await internal_convert_geometry(obj, outputFile, max_level, subparts, hide_children, body, nFaces)
+    await internal_convert_geometry(obj, outputFile, max_level, subparts, hide_children, body, nFaces, fullPath)
     body.innerHTML += "<h1>Convertion succeeded !</h1>"
 }
 
