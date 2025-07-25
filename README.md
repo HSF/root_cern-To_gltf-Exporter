@@ -84,7 +84,7 @@ See [export_LHCb.html](export_LHCb.html) for a more complete example
  3. Calling the exporter code
 
 ```javascript
-    convertGeometry("./LHCb.root", "lhcb.gltf", 4, subparts, hide_children, objectName = "default", nFaces = 24);
+    convertGeometry("./LHCb.root", "lhcb.gltf", 4, subparts, hide_children, fullPath = false, objectName = "default", nFaces = 24);
 ```
 Here we call the conversion function. Parameters are :
  * the input file name
@@ -92,6 +92,8 @@ Here we call the conversion function. Parameters are :
  * the maximum depth to consider for the conversion. Anything below will be discarded
  * subparts definition of the subparts to create in the geometry (see Data above)
  * hide_children array of paths prefix for nodes that should be ignored (see Data above)
+ * (optional) fullPath whether to compare with full paths. If true, subpart and hidden_children
+   strings are compared with a concatenation of the whole path of elements, with '_' as the separator
  * (optional) the name of the top level object to consider in the input ROOT file
  * (optional) the number of faces to be used for spheres/circles in the resulting geometry
 
