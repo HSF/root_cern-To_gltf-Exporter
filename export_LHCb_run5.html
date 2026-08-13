@@ -1,0 +1,153 @@
+<html>
+
+  <head>
+    <script type="importmap"> {
+     "imports": {
+         "three": "https://unpkg.com/three@0.178.0/build/three.module.js",
+         "gltfexporter" : "https://unpkg.com/three@0.178.0/examples/jsm/exporters/GLTFExporter.js",
+         "root" : "https://root.cern/js/7.9.0/modules/main.mjs",
+         "rootgeom" : "https://root.cern/js/7.9.0/modules/geom/TGeoPainter.mjs"
+      } }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.js"></script>
+  </head>
+
+<body>
+  <script type="module">
+    
+    import { convertGeometry } from './phoenixExport.js';
+
+    // Run5 / Upgrade II visualisation (proto-v00.04 style).
+    // Needs a single full-detector ROOT dump (same idea as Run3 LHCb.root), e.g. from
+    // Detector compact run5/proto-v00.04 → DetectorDump → LHCb_run5.root
+
+    var hide_children = [
+    // uncomment to drop large regions if needed
+/*
+        /lvUpstreamRegion/,
+        /lvBeforeMagnetRegion/,
+        /lvMagnetRegion/,
+        /lvAfterMagnetRegion/,
+        /lvDownstreamRegion/,
+*/
+        // TV — drop overly fine detail if present in full dump
+        // (Sensors submenu uses pvChip; revisit if Sensors-only view looks wrong)
+
+        // UP — hide chip / pixel internals
+        /pvChip/, /pvSensor/, /sensor0/, /PixelGroup/,
+        /pvAsic/, /lvPixelAsic/, /pvGuardRing/, /pvPeriphery/,
+        /pvSectorOne/, /pvGroup2/,
+
+        // Rich1 — hide fine PMT parts
+        /pvRichPMTAnode/, /pvRichPMTSideEnvelope/, /pvRichPMTBackEnvelope/,
+        /pvRichPMTFrontRing/, /pvRichPMTSMaster/, /pvRichPmtMaster/,
+
+        // Pipe
+        /lvUpstreamRegion/, /DeliveryPipe/, /Gas$/,
+        /RfContact/, /CollarClipScrew/, /Screw/, /ContactRing/,
+
+        // FT
+        /SupportCable/, /Dowel/, /HoneycombFill/, /CFSkin/,
+        /lvFTEndplug/, /lvFTEndpiece/,
+
+        // MP
+        /lvChip/, /cool/, /extexh/, /extsup/, /intexh/, /intsup/, /mani/,
+
+        // Rich2
+        /pvRichPMTAnode/, /pvRichPMTSideEnvelope/, /pvRichPMTBackEnvelope/,
+        /pvRichPMTFrontRing/, /pvRichGrandPMT/, /pvRichPMTSMaster/,
+        /pvRichGrandPMTSMaster/, /pvRichPmtMaster/,
+
+        // PicoCal — hide cells / fibers (deposit-ready)
+        /pvCell/, /FiberPb/, /CellPb/, /CellSteel/, /CellPlastic/,
+        /Stack/, /ReadOut/,
+
+        // Drop entire HCAL (not used for Run5 Phoenix vis)
+        /lvHcal/, /Hcal/, /HCAL/,
+        /InnHalfModule/, /OutHalfModule/,
+        /FwFaceSubModule/, /BkFaceSubModule/,
+        /ScTile/, /Spacer/, /MsPl/, /WorkStuff/, /WorkPart/, /ComPart/,
+        /ShelfWorkStuff/, /FaceWorkStuff/, /OutStrip/, /CntStrip/,
+
+        // Muon
+        /GasGap/, /EndCap/,
+    ];
+
+    // for each level of hierarchy in the phoenix menu, tell which parts of the geometry to
+    // use and whether they are initially visible or not.
+    var subparts = {
+
+    // Beam pipe (menu names match previous merge: Pipe > …)
+    "Pipe > BeamPipe" : [[/lvUX|UX8|PipeAl|PipeCu|PipeJunc|VeloDSPipe|WFTube|WFCone|WFTw|Bakeout|Bellow|Jacket|Adapter/], true],
+    "Pipe > Support"  : [[/DetSup|Supports/], .3],
+
+    // TV (Timing VELO)
+    "TV > VacTank" : [[/pvVacTank/], .15],
+    "TV > DetSup"  : [[/DetSup/], .2],
+    "TV > RFFoil"  : [[/pvRFFoil/], .3],
+    "TV > RFBox"   : [[/pvRFBox/], .2],
+    "TV > Modules" : [[/pvModule/], true],
+    "TV > Sensors" : [[/pvChip/, /pvBumpBonds/], true],
+
+    // UP
+    "UP > Frame"   : [[/lvUPFrame/], .12],
+    "UP > Box"     : [[/lvUPBox/], .15],
+    "UP > Staves"  : [[/pvStave/], .25],
+    "UP > Modules" : [[/pvModule|pvPixelModule/], .30],
+
+    // Rich1
+    "Rich1 > MagShield"  : [[/pvRich1MagSh/], .12],
+    "Rich1 > PDFrame"    : [[/pvRich1PhDetSupFrame/], .2],
+    "Rich1 > Mirrors"    : [[/Mirror/], .25],
+    "Rich1 > PMTModules" : [[/pvRich1PmtStdModule|pvRich1PmtNoEC/], .3],
+
+    // Magnet
+    "Magnet > Envelope" : [[/MagnetEnvelope/], .2],
+    "Magnet > Coils"    : [[/Coil/], true],
+    "Magnet > Yoke"     : [[/Vertical_Part|Horizontal_Part/], .85],
+
+    // FT (SciFi)
+    "FT > FrameBars"  : [[/pvCFramePairIBar|pvCFramePairCarrier|pvCFramePairModuleMount|pvCFramePairSpacerBar/], .35],
+    "FT > ModuleHole" : [[/lvFTModuleHole/], .08],
+    "FT > ModuleFull" : [[/lvFTModuleFull/], .08],
+    "FT > Mats"       : [[/Mat[0-9]/], true],
+
+    // MP (Mighty Pixel)
+    "MP > Stations" : [[/lvStation/], .08],
+    "MP > Layers"   : [[/lvLayer/], .1],
+    "MP > Columns"  : [[/lvMPCol/], .12],
+    "MP > Modules"  : [[/lvMPModule/], .2],
+    "MP > Sheets"   : [[/lvMPSheet/], true],
+    "MP > PCB"      : [[/lvPCB/], true],
+
+    // Rich2
+    "Rich2 > GasEnclosure"  : [[/pvRich2GasEnclosure/], .1],
+    "Rich2 > PhDet"         : [[/pvRich2PhDet/], true],
+    "Rich2 > PMTModules"    : [[/pvRich2PmtStdModule/], true],
+    "Rich2 > SphMirrors"    : [[/SphMirror/], .4],
+    "Rich2 > SecMirrors"    : [[/SecMirror/], .4],
+    "Rich2 > MirrorSupport" : [[/SphMSupport|SecMSupport/], .4],
+
+    // Neutron shielding (menu names match previous merge: NS > …)
+    "NS > Support" : [[/Support/], .3],
+    "NS > Cover"   : [[/Cover/], .4],
+    "NS > Plastic" : [[/Plastic/], .55],
+
+    // PicoCal
+    "PicoCal > Support" : [[/PlugSupport|SteelSheet|AirSlot/], .08],
+    "PicoCal > Modules" : [[/lvModType/], .05],
+    "PicoCal > Covers"  : [[/FrontCover|BackCover/], .45],
+
+    // Muon
+    "Muon > Filters"  : [[/MuFilter|FilterBeam|HalfFilter/], .2],
+    "Muon > Frames"   : [[/lvFrameM/], .25],
+    "Muon > Panels"   : [[/FrontPanel|RearPanel|Plug/], .3],
+    "Muon > Stations" : [[/pvM[2-5](A|C)Side/], .15],
+    "Muon > Chambers" : [[/Cham/], true],
+    }
+
+    // Single full Run5 ROOT → one glTF (no merge.py), same workflow as Run3 export_LHCb.html
+    convertGeometry("LHCb_run5.root", "LHCb_run5.gltf", 10, subparts, hide_children, true, "default");
+
+  </script>
+</body>
